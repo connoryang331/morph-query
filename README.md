@@ -323,6 +323,10 @@ We plan to support the following features in future releases:
   - **IPA (International Phonetic Alphabet)**: Add standard IPA transcriptions for pronunciation lookups.
   - **ARPAbet / CMUDict Support**: Support machine-readable phonetic transcriptions (e.g., `S T ER1` representing ARPAbet phoneme sequences).
   - **Syllable Metrics**: Add syllable count and syllabification details (stress patterns).
+- **Etymology & Word Origins**:
+  - **Bilingual Etymological Data**: Provide historical origins and development paths of English words in both English and Chinese (e.g., source languages, historical semantic shifts, and cognates).
+- **Definitions & Explanations**:
+  - **Bilingual Word Meanings**: Integrate dictionary definitions and explanations in both English and Chinese to serve as a fast and comprehensive vocabulary learning tool.
 
 ## Feedback & Requests
 
