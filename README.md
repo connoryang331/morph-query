@@ -298,8 +298,6 @@ morph_query/
 ├── data/
 │   ├── citylex-2026-06-15_morphology_segmention.tsv      # CityLex raw data (~68k rows)
 │   ├── eng.word.full.230613.r7_morphologic_division.tsv  # umLabeller raw data (~611k rows)
-│   ├── citylex-2026-06-15_morphology_segmention.xlsx     # Original CityLex Excel
-│   ├── eng.word.full.230613.r7_morphologic_division.xlsx # Original umLabeller Excel
 │   └── morph_data.tsv           # Merged TSV (build source)
 ├── scripts/
 │   └── build_morph_query_db.py  # Build database from TSV

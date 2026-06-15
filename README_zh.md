@@ -294,8 +294,6 @@ morph_query/
 ├── data/
 │   ├── citylex-2026-06-15_morphology_segmention.tsv      # CityLex 原始数据 (~6.8万行)
 │   ├── eng.word.full.230613.r7_morphologic_division.tsv  # umLabeller 原始数据 (~61.1万行)
-│   ├── citylex-2026-06-15_morphology_segmention.xlsx     # 原始 Excel 文件
-│   ├── eng.word.full.230613.r7_morphologic_division.xlsx # 原始 Excel 文件
 │   └── morph_data.tsv           # 合并后的中间 TSV (构建数据库的源文件)
 ├── scripts/
 │   └── build_morph_query_db.py  # 从 TSV 构建 SQLite 数据库的脚本
