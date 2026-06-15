@@ -1,5 +1,7 @@
 # morph-query
 
+[English](README.md) | [简体中文](README_zh.md)
+
 Search English words by morphological annotation columns.
 
 A morphological query tool based on the **umLabeller** and **CityLex** morpheme-annotation datasets. Search by prefix, suffix, root, derivational suffix, or inflectional suffix. Get morpheme segmentation, full morphological structure analysis, and batch processing.
