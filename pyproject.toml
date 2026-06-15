@@ -24,9 +24,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nlwl/morph-query"
-Source = "https://github.com/nlwl/morph-query"
-BugTracker = "https://github.com/nlwl/morph-query/issues"
+Homepage = "https://github.com/connoryang331/morph-query"
+Source = "https://github.com/connoryang331/morph-query"
+BugTracker = "https://github.com/connoryang331/morph-query/issues"
 
 [tool.setuptools.packages.find]
 include = ["morph_query*"]
