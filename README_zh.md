@@ -90,6 +90,12 @@ python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exc
 
 默认情况下，所有搜索命令都会在合并后的 **umLabeller 和 CityLex 数据集**中进行查询。使用 `source` 参数可以限制只查询其中一个数据集。
 
+> [!TIP]
+> `search` 命令支持以下三种通配符 `*` 匹配模式：
+> - `*str`（如 `*ough`）— 匹配以 `str` 结尾的单词。
+> - `str*`（如 `ough*`）— 匹配以 `str` 开头的单词。
+> - `*str*` 或 `str`（如 `*ough*` 或 `ough`）— 匹配在任意位置包含 `str` 的单词（默认模式）。
+
 ### 形态学分析命令
 
 | 命令 | 描述 |

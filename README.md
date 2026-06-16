@@ -91,6 +91,12 @@ python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exc
 
 All search commands query **both umLabeller and CityLex datasets merged** by default. Use the `source` parameter to search only one dataset.
 
+> [!TIP]
+> The `search` command supports three wildcard matching styles using `*`:
+> - `*str` (e.g. `*ough`) — Matches words ending with `str`.
+> - `str*` (e.g. `ough*`) — Matches words starting with `str`.
+> - `*str*` or `str` (e.g. `*ough*` or `ough`) — Matches words containing `str` anywhere (default behavior).
+
 
 
 ### Morphology Analysis Commands
