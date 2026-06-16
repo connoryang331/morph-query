@@ -104,8 +104,9 @@ def main():
             freq = row[3] if len(row) > 3 and has_freq_col else ""
             
             all_rows.append([word, uml_seg, city_seg, freq])
-            # Fetch all words
-            words_to_fetch.append(word)
+            # Only fetch if it is NOT a CityLex word
+            if not city_seg.strip():
+                words_to_fetch.append(word)
 
     cache = load_cache()
     print(f"Loaded cache with {len(cache)} entries.")
@@ -118,7 +119,7 @@ def main():
     # Filter words that actually need to be fetched
     pending_words = [w for w in words_to_fetch if w not in cache]
     total_to_fetch = len(pending_words)
-    print(f"Total words with CityLex: {len(words_to_fetch)}")
+    print(f"Total target words (umLabeller-only): {len(words_to_fetch)}")
     print(f"Already cached: {len(words_to_fetch) - total_to_fetch}")
     print(f"Pending fetch: {total_to_fetch}")
     
