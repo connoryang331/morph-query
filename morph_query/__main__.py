@@ -59,7 +59,7 @@ def main():
         print("  --exclude=STR exclude results containing STR (case-insensitive)")
         print("  --exact       exact morpheme match instead of substring (for search cmd)")
         print("  --limit=N     limit number of results")
-        print("  --fq=VAL      frequency filter: high (>=5.0), medium (1.0-5.0), low (<=1.0)")
+        print("  --fq=VAL      frequency filter: high (>=5.0), medium (>=1.0 and <5.0), low (<1.0)")
         sys.exit(1)
 
     cmd, arg = sys.argv[1], sys.argv[2]

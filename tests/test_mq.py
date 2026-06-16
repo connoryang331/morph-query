@@ -240,7 +240,7 @@ class TestMQ(unittest.TestCase):
         for r in results:
             freq = r.get("frequency")
             self.assertIsNotNone(freq)
-            self.assertGreater(freq, 1.0)
+            self.assertGreaterEqual(freq, 1.0)
             self.assertLess(freq, 5.0)
 
     def test_search_fq_low(self):
@@ -249,7 +249,7 @@ class TestMQ(unittest.TestCase):
         for r in results:
             freq = r.get("frequency")
             if freq is not None:
-                self.assertLessEqual(freq, 1.0)
+                self.assertLess(freq, 1.0)
 
     def test_search_fq_invalid(self):
         with self.assertRaises(ValueError):
@@ -276,7 +276,7 @@ class TestMQ(unittest.TestCase):
         for r in results:
             freq = r.get("frequency")
             self.assertIsNotNone(freq)
-            self.assertGreater(freq, 1.0)
+            self.assertGreaterEqual(freq, 1.0)
             self.assertLess(freq, 5.0)
 
 
