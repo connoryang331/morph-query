@@ -66,13 +66,13 @@ python scripts/build_morph_query_db.py
 通过 `mq` 命令调用：
 
 ```bash
-mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--limit=N]
+mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
 ```
 
 或者直接通过 Python 模块调用：
 
 ```bash
-python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--limit=N]
+python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
 ```
 
 ### 搜索命令
@@ -107,6 +107,8 @@ python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--lim
 | `seg` | `both` (默认) \| `umlabeller` \| `citylex` |
 | `--json` | 输出为 JSON 格式 |
 | `--exclude-inf` | 过滤并排除包含屈折后缀（如 -ed, -s, -ing）的结果 |
+| `--exclude=STR` | 排除包含子串 `STR` 的结果（不区分大小写） |
+| `--exact` | 精确匹配词素而不是模糊子串匹配（仅适用于 `search` 命令） |
 | `--limit=N` | 限制返回的结果数量 |
 
 ### 使用示例
@@ -177,6 +179,20 @@ Found 19252 results (source=both, seg=both, exclude_inf):
   abduction         umlabeller=abduce @@t @@ion     citylex={ab--duct}>ion>
   aberration        umlabeller=aberrate @@ion       citylex={aberr--ate}>ion>
   ... and 19248 more
+
+# 排除包含特定子串的词（例如搜索 'ough' 但排除 'ought' 干扰）
+$ mq search ough --exclude=ought
+Found 362 results (source=both, seg=both, exclude=ought):
+  rough             umlabeller=rough                citylex={rough}
+  tough             umlabeller=tough                citylex={tough}
+  ... and 360 more
+
+# 精确词素搜索（匹配精确词素，而不是模糊子串）
+$ mq search ch --exact
+Found 8 results (source=both, seg=both, exact):
+  chad              umlabeller=ch @@have @@ed       citylex={chad}
+  cham              umlabeller=ch @@am              citylex=
+  ... and 6 more
 ```
 
 ## Python API

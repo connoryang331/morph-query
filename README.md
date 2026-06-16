@@ -67,13 +67,13 @@ No manual configuration is required.
 Invoke via the `mq` command:
 
 ```bash
-mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--limit=N]
+mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
 ```
 
 Or directly via the Python module:
 
 ```bash
-python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--limit=N]
+python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
 ```
 
 ### Search Commands
@@ -110,6 +110,8 @@ All search commands query **both umLabeller and CityLex datasets merged** by def
 | `seg`            | `both` (default) \| `umlabeller` \| `citylex`                 |
 | `--json`         | JSON output                                                    |
 | `--exclude-inf`  | Exclude results with inflectional suffixes                     |
+| `--exclude=STR`  | Exclude results containing `STR` (case-insensitive)            |
+| `--exact`        | Match exact morpheme instead of substring (for `search` cmd)  |
 | `--limit=N`      | Limit number of results returned                               |
 
 ### Examples
@@ -180,6 +182,20 @@ Found 19252 results (source=both, seg=both, exclude_inf):
   abduction         umlabeller=abduce @@t @@ion     citylex={ab--duct}>ion>
   aberration        umlabeller=aberrate @@ion       citylex={aberr--ate}>ion>
   ... and 19248 more
+
+# Exclude results containing specific strings (e.g. search 'ough' but exclude 'ought')
+$ mq search ough --exclude=ought
+Found 362 results (source=both, seg=both, exclude=ought):
+  rough             umlabeller=rough                citylex={rough}
+  tough             umlabeller=tough                citylex={tough}
+  ... and 360 more
+
+# Exact morpheme search (matching exact morpheme instead of substring)
+$ mq search ch --exact
+Found 8 results (source=both, seg=both, exact):
+  chad              umlabeller=ch @@have @@ed       citylex={chad}
+  cham              umlabeller=ch @@am              citylex=
+  ... and 6 more
 ```
 
 ## Python API
