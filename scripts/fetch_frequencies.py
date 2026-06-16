@@ -157,37 +157,38 @@ def main():
     else:
         print(f"Starting fetch using {MAX_WORKERS} threads...")
         completed = 0
-        batch_unsaved = 0
+        batch_size = 2000
         
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = {executor.submit(get_word_frequency, w): w for w in pending_words}
-            
-            for future in as_completed(futures):
-                word = futures[future]
-                try:
-                    freq = future.result()
-                    cache[word] = freq
-                except Exception as e:
-                    cache[word] = 0.0
-                    
-                completed += 1
-                batch_unsaved += 1
+        try:
+            for i in range(0, total_to_fetch, batch_size):
+                chunk = pending_words[i:i + batch_size]
                 
-                if completed % 100 == 0 or completed == total_to_fetch:
-                    print(f"Progress: {completed}/{total_to_fetch} ({(completed/total_to_fetch)*100:.2f}%)")
+                with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                    futures = {executor.submit(get_word_frequency, w): w for w in chunk}
                     
-                if batch_unsaved >= BATCH_SAVE_SIZE:
-                    save_cache(cache)
-                    batch_unsaved = 0
-
-                # Periodically sync to TSV file every 1000 items
-                if completed % 1000 == 0 or completed == total_to_fetch:
-                    print(f"Syncing frequencies to morph_data.tsv (completed: {completed})...")
-                    write_tsv(all_rows, cache)
-                    
-        # Final save
-        save_cache(cache)
-        print("Fetch complete and cache saved.")
+                    for future in as_completed(futures):
+                        word = futures[future]
+                        try:
+                            freq = future.result()
+                            cache[word] = freq
+                        except Exception:
+                            cache[word] = 0.0
+                            
+                        completed += 1
+                        if completed % 100 == 0 or completed == total_to_fetch:
+                            print(f"Progress: {completed}/{total_to_fetch} ({(completed/total_to_fetch)*100:.2f}%)")
+                
+                # Save chunk progress
+                save_cache(cache)
+                print(f"Syncing frequencies to morph_data.tsv (completed: {completed})...")
+                write_tsv(all_rows, cache)
+                
+        except KeyboardInterrupt:
+            print("\nFetch interrupted by user (Ctrl+C). Saving progress...")
+            save_cache(cache)
+            write_tsv(all_rows, cache)
+            print("Progress saved successfully. Exiting immediately.")
+            os._exit(0)
 
     print("morph_data.tsv is fully up-to-date!")
 
