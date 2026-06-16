@@ -106,13 +106,17 @@ def main():
             sys.exit(1)
 
     if exclude_str:
-        ex = exclude_str.lower()
-        results = [
-            r for r in results
-            if ex not in r["word"].lower()
-            and ex not in r.get("umlabeller", "").lower()
-            and ex not in r.get("citylex", "").lower()
-        ]
+        excludes = [e.strip().lower() for e in exclude_str.split(",") if e.strip()]
+        if excludes:
+            results = [
+                r for r in results
+                if not any(
+                    ex in r["word"].lower()
+                    or ex in r.get("umlabeller", "").lower()
+                    or ex in r.get("citylex", "").lower()
+                    for ex in excludes
+                )
+            ]
 
     if json_output:
         print(_json.dumps(results, ensure_ascii=False))

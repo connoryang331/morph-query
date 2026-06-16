@@ -107,7 +107,7 @@ python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exc
 | `seg` | `both` (默认) \| `umlabeller` \| `citylex` |
 | `--json` | 输出为 JSON 格式 |
 | `--exclude-inf` | 过滤并排除包含屈折后缀（如 -ed, -s, -ing）的结果 |
-| `--exclude=STR` | 排除包含子串 `STR` 的结果（不区分大小写） |
+| `--exclude=S1,S2` | 排除包含任一逗号分隔子串的结果（不区分大小写，支持多个子串） |
 | `--exact` | 精确匹配词素而不是模糊子串匹配（仅适用于 `search` 命令） |
 | `--limit=N` | 限制返回的结果数量 |
 

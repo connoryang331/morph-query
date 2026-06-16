@@ -110,7 +110,7 @@ All search commands query **both umLabeller and CityLex datasets merged** by def
 | `seg`            | `both` (default) \| `umlabeller` \| `citylex`                 |
 | `--json`         | JSON output                                                    |
 | `--exclude-inf`  | Exclude results with inflectional suffixes                     |
-| `--exclude=STR`  | Exclude results containing `STR` (case-insensitive)            |
+| `--exclude=S1,S2`| Exclude results containing any of the comma-separated strings (case-insensitive) |
 | `--exact`        | Match exact morpheme instead of substring (for `search` cmd)  |
 | `--limit=N`      | Limit number of results returned                               |
 
