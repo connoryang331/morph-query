@@ -39,12 +39,29 @@ def get_word_frequency(word):
     return 0.0
 
 def load_cache():
+    # Check main cache file first
     if CACHE_PATH.exists():
         try:
             with open(CACHE_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading cache: {e}. Starting fresh.")
+            print(f"Error loading main cache: {e}.")
+
+    # Fallback to temp file if main cache is corrupted/missing
+    temp_path = CACHE_PATH.with_suffix(".tmp")
+    if temp_path.exists():
+        try:
+            print("Attempting to recover cache from temporary file...")
+            with open(temp_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # Try to restore main cache from valid temp file
+            os.replace(temp_path, CACHE_PATH)
+            print("Successfully recovered cache from temp file.")
+            return data
+        except Exception as e:
+            print(f"Error loading temp cache: {e}.")
+
+    print("Starting with empty cache.")
     return {}
 
 def save_cache(cache):
@@ -52,10 +69,9 @@ def save_cache(cache):
     try:
         with open(temp_path, "w", encoding="utf-8") as f:
             json.dump(cache, f, ensure_ascii=False, indent=2)
-        if temp_path.exists():
-            if CACHE_PATH.exists():
-                os.remove(CACHE_PATH)
-            os.rename(temp_path, CACHE_PATH)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, CACHE_PATH)
     except Exception as e:
         print(f"Error saving cache: {e}")
 
@@ -72,11 +88,10 @@ def write_tsv(all_rows, cache):
                 if freq != "":
                     freq = str(freq)
                 writer.writerow([word, uml_seg, city_seg, freq])
+            f.flush()
+            os.fsync(f.fileno())
 
-        if temp_tsv.exists():
-            if TSV_PATH.exists():
-                os.remove(TSV_PATH)
-            os.rename(temp_tsv, TSV_PATH)
+        os.replace(temp_tsv, TSV_PATH)
     except Exception as e:
         print(f"Error writing TSV: {e}")
 
@@ -110,6 +125,20 @@ def main():
 
     cache = load_cache()
     print(f"Loaded cache with {len(cache)} entries.")
+    
+    # Merge existing frequencies from morph_data.tsv into cache (self-healing)
+    merged_count = 0
+    for row in all_rows:
+        word, _, _, freq = row
+        if freq != "" and word not in cache:
+            try:
+                cache[word] = float(freq)
+                merged_count += 1
+            except ValueError:
+                pass
+    if merged_count > 0:
+        print(f"Merged {merged_count} frequencies from morph_data.tsv into cache.")
+        save_cache(cache)
     
     # Sync initial cache to TSV
     if cache:
