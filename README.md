@@ -67,13 +67,13 @@ No manual configuration is required.
 Invoke via the `mq` command:
 
 ```bash
-mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
+mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N] [--fq=VAL]
 ```
 
 Or directly via the Python module:
 
 ```bash
-python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
+python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N] [--fq=VAL]
 ```
 
 ### Search Commands
@@ -119,6 +119,7 @@ All search commands query **both umLabeller and CityLex datasets merged** by def
 | `--exclude=S1,S2`| Exclude results containing any of the comma-separated strings (case-insensitive) |
 | `--exact`        | Match exact morpheme instead of substring (for `search` cmd)  |
 | `--limit=N`      | Limit number of results returned                               |
+| `--fq=VAL`       | Filter results by frequency tier: `high` (>=5.0), `medium` (1.0-5.0), `low` (<=1.0 or missing) |
 
 ### Examples
 
@@ -209,6 +210,13 @@ Found 8 results (source=both, seg=both, exact):
   chad              umlabeller=ch @@have @@ed       citylex={chad}
   cham              umlabeller=ch @@am              citylex=
   ... and 6 more
+
+# Filter results by frequency (e.g. search "ion" but only high-frequency words)
+$ mq search ion --fq=high --limit=3
+Found 2782 results (source=both, seg=both, fq=high, limit=3):
+  abolition                       umlabeller=abolish @@ion                        citylex={abolish}>ion>                    fq=5.33
+  abortion                        umlabeller=abort @@ion                          citylex={abort}>ion>                      fq=9.94
+  absorption                      umlabeller=absorb @@t @@ion                     citylex={absorb}>t>ion>                   fq=15.02
 ```
 
 ## Python API

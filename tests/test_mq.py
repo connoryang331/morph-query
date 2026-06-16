@@ -225,6 +225,60 @@ class TestMQ(unittest.TestCase):
         self.assertIsInstance(n, int)
         self.assertGreater(n, 0)
 
+    # ── frequency filter tests ──────────────────────────────────
+    def test_search_fq_high(self):
+        results = self.mq.search("ion", fq="high")
+        self.assertGreater(len(results), 0)
+        for r in results:
+            freq = r.get("frequency")
+            self.assertIsNotNone(freq)
+            self.assertGreaterEqual(freq, 5.0)
+
+    def test_search_fq_medium(self):
+        results = self.mq.search("ion", fq="medium")
+        self.assertGreater(len(results), 0)
+        for r in results:
+            freq = r.get("frequency")
+            self.assertIsNotNone(freq)
+            self.assertGreater(freq, 1.0)
+            self.assertLess(freq, 5.0)
+
+    def test_search_fq_low(self):
+        results = self.mq.search("ion", fq="low")
+        self.assertGreater(len(results), 0)
+        for r in results:
+            freq = r.get("frequency")
+            if freq is not None:
+                self.assertLessEqual(freq, 1.0)
+
+    def test_search_fq_invalid(self):
+        with self.assertRaises(ValueError):
+            self.mq.search("ion", fq="invalid_value")
+
+    def test_words_with_prefix_fq(self):
+        results = self.mq.words_with_prefix("ab", fq="high")
+        self.assertGreater(len(results), 0)
+        for r in results:
+            freq = r.get("frequency")
+            self.assertIsNotNone(freq)
+            self.assertGreaterEqual(freq, 5.0)
+
+    def test_word_count_fq(self):
+        total_count = self.mq.word_count("ion")
+        high_count = self.mq.word_count("ion", fq="high")
+        medium_count = self.mq.word_count("ion", fq="medium")
+        low_count = self.mq.word_count("ion", fq="low")
+        self.assertEqual(high_count + medium_count + low_count, total_count)
+
+    def test_sample_fq(self):
+        results = self.mq.sample(5, fq="medium")
+        self.assertEqual(len(results), 5)
+        for r in results:
+            freq = r.get("frequency")
+            self.assertIsNotNone(freq)
+            self.assertGreater(freq, 1.0)
+            self.assertLess(freq, 5.0)
+
 
 if __name__ == "__main__":
     unittest.main()

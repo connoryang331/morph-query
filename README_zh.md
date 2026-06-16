@@ -66,13 +66,13 @@ python scripts/build_morph_query_db.py
 通过 `mq` 命令调用：
 
 ```bash
-mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
+mq <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N] [--fq=VAL]
 ```
 
 或者直接通过 Python 模块调用：
 
 ```bash
-python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]
+python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N] [--fq=VAL]
 ```
 
 ### 搜索命令
@@ -116,6 +116,7 @@ python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exc
 | `--exclude=S1,S2` | 排除包含任一逗号分隔子串的结果（不区分大小写，支持多个子串） |
 | `--exact` | 精确匹配词素而不是模糊子串匹配（仅适用于 `search` 命令） |
 | `--limit=N` | 限制返回的结果数量 |
+| `--fq=VAL` | 按词频三挡过滤结果：`high` (>=5.0), `medium` (1.0-5.0), `low` (<=1.0 或无频数数据) |
 
 ### 使用示例
 
@@ -206,6 +207,13 @@ Found 8 results (source=both, seg=both, exact):
   chad              umlabeller=ch @@have @@ed       citylex={chad}
   cham              umlabeller=ch @@am              citylex=
   ... and 6 more
+
+# 按词频过滤结果（例如：搜索 "ion" 词素，但仅返回高词频词汇）
+$ mq search ion --fq=high --limit=3
+Found 2782 results (source=both, seg=both, fq=high, limit=3):
+  abolition                       umlabeller=abolish @@ion                        citylex={abolish}>ion>                    fq=5.33
+  abortion                        umlabeller=abort @@ion                          citylex={abort}>ion>                      fq=9.94
+  absorption                      umlabeller=absorb @@t @@ion                     citylex={absorb}>t>ion>                   fq=15.02
 ```
 
 ## Python API

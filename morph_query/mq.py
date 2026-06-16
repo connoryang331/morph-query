@@ -102,7 +102,7 @@ class MQ:
     def search(
         self, s: str, *, source: str = "both", seg: str = "both",
         exclude_inf: bool = False, limit: int | None = None,
-        exact: bool = False,
+        exact: bool = False, fq: str | None = None,
     ) -> list[dict]:
         """Generic search.
 
@@ -116,15 +116,16 @@ class MQ:
           exclude_inf — whether to exclude results with inflectional suffixes
           limit       — max results to return (default: no limit)
           exact       — match exact morpheme instead of substring (default: False)
+          fq          — frequency filter: "high" | "medium" | "low"
         """
         if exact:
             match seg:
                 case "umlabeller":
-                    cols = "w.word, w.umlabeller"
+                    cols = "w.word, w.umlabeller, w.frequency"
                 case "citylex":
-                    cols = "w.word, w.citylex"
+                    cols = "w.word, w.citylex, w.frequency"
                 case _:
-                    cols = "w.word, w.umlabeller, w.citylex"
+                    cols = "w.word, w.umlabeller, w.citylex, w.frequency"
 
             where_clauses = ["m.morpheme = ?"]
             params = [s]
@@ -132,6 +133,12 @@ class MQ:
                 where_clauses.append("m.source = 'umlabeller'")
             elif source == "citylex":
                 where_clauses.append("m.source = 'citylex'")
+
+            if fq:
+                fq_cond, fq_params = self._get_fq_condition(fq, prefix="w.")
+                where_clauses.append(fq_cond)
+                params.extend(fq_params)
+
             where_str = " AND ".join(where_clauses)
             sql = f"""
                 SELECT DISTINCT {cols} 
@@ -142,12 +149,18 @@ class MQ:
         else:
             match seg:
                 case "umlabeller":
-                    cols = "word, umlabeller"
+                    cols = "word, umlabeller, frequency"
                 case "citylex":
-                    cols = "word, citylex"
+                    cols = "word, citylex, frequency"
                 case _:
-                    cols = "word, umlabeller, citylex"
+                    cols = "word, umlabeller, citylex, frequency"
             where, params = self._where_like(source, s)
+
+            if fq:
+                fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+                where = f"({where}) AND {fq_cond}"
+                params = list(params) + fq_params
+
             sql = f"SELECT DISTINCT {cols} FROM words WHERE {where}"
 
         if limit and not exclude_inf:
@@ -164,38 +177,38 @@ class MQ:
 
     def words_with_prefix(
         self, p: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Find words containing the given prefix."""
-        return self._morpheme_type_search(p, "prefix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit)
+        return self._morpheme_type_search(p, "prefix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit, fq=fq)
 
     def words_with_suffix(
         self, s: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Find words containing the given suffix."""
-        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit)
+        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit, fq=fq)
 
     def words_with_root(
         self, r: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Find words containing the given root."""
-        return self._morpheme_type_search(r, "root", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit)
+        return self._morpheme_type_search(r, "root", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit, fq=fq)
 
     def words_with_deri(
         self, s: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Find words with the given derivational suffix. Matches @@{s} (umLabeller) / >{s} (CityLex)"""
-        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit)
+        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit, fq=fq)
 
     def words_with_inf(
         self, s: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Find words with the given inflectional suffix. Matches @@{s} (umLabeller) / >{s} (CityLex)"""
-        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit)
+        return self._morpheme_type_search(s, "suffix", source=source, seg=seg, exclude_inf=exclude_inf, limit=limit, fq=fq)
 
     @staticmethod
     def _where_like(source: str, s: str) -> tuple[str, tuple]:
@@ -213,18 +226,34 @@ class MQ:
             case _:  # both
                 return "(word LIKE ? OR umlabeller LIKE ? OR citylex LIKE ?)", (pattern, pattern, pattern)
 
+    @staticmethod
+    def _get_fq_condition(fq: str | None, prefix: str = "") -> tuple[str, list]:
+        """Return (condition_sql, params). prefix is like 'w.' or ''."""
+        if not fq:
+            return "", []
+        fq = fq.lower()
+        col = f"{prefix}frequency"
+        if fq == "high":
+            return f"{col} >= 5.0", []
+        elif fq == "medium":
+            return f"{col} > 1.0 AND {col} < 5.0", []
+        elif fq == "low":
+            return f"({col} <= 1.0 OR {col} IS NULL)", []
+        else:
+            raise ValueError("fq must be one of 'high', 'medium', 'low'")
+
     def _morpheme_type_search(
         self, morpheme: str, morph_type: str, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False, limit: int | None = None,
+        exclude_inf: bool = False, limit: int | None = None, fq: str | None = None,
     ) -> list[dict]:
         """Query specialized relation table word_morphemes for exact morpheme search."""
         match seg:
             case "umlabeller":
-                cols = "w.word, w.umlabeller"
+                cols = "w.word, w.umlabeller, w.frequency"
             case "citylex":
-                cols = "w.word, w.citylex"
+                cols = "w.word, w.citylex, w.frequency"
             case _:
-                cols = "w.word, w.umlabeller, w.citylex"
+                cols = "w.word, w.umlabeller, w.citylex, w.frequency"
 
         where_clauses = ["m.morpheme = ?", "m.type = ?"]
         params = [morpheme, morph_type]
@@ -233,6 +262,11 @@ class MQ:
             where_clauses.append("m.source = 'umlabeller'")
         elif source == "citylex":
             where_clauses.append("m.source = 'citylex'")
+
+        if fq:
+            fq_cond, fq_params = self._get_fq_condition(fq, prefix="w.")
+            where_clauses.append(fq_cond)
+            params.extend(fq_params)
 
         where_str = " AND ".join(where_clauses)
         sql = f"""
@@ -256,7 +290,7 @@ class MQ:
     def _word_raw(self, word: str) -> dict | None:
         """Internal: query DB directly, return raw row."""
         cur = self.conn.execute(
-            "SELECT word, umlabeller, citylex FROM words WHERE word = ?", (word,)
+            "SELECT word, umlabeller, citylex, frequency FROM words WHERE word = ?", (word,)
         )
         r = cur.fetchone()
         return dict(r) if r else None
@@ -268,7 +302,7 @@ class MQ:
         for i in range(0, len(word_list), chunk_size):
             chunk = word_list[i:i + chunk_size]
             placeholders = ",".join(["?"] * len(chunk))
-            sql = f"SELECT word, umlabeller, citylex FROM words WHERE word IN ({placeholders})"
+            sql = f"SELECT word, umlabeller, citylex, frequency FROM words WHERE word IN ({placeholders})"
             cur = self.conn.execute(sql, chunk)
             for row in cur.fetchall():
                 word_map[row["word"]] = dict(row)
@@ -500,6 +534,7 @@ class MQ:
                 "suffixes": suffixes,
                 "derivational": [], "inflectional": [],
                 "base": None, "lemma": None,
+                "frequency": r.get("frequency"),
             }
             if ai:
                 base_result["ai"] = self._ai_check(
@@ -547,6 +582,7 @@ class MQ:
             "inflectional": inflectional,
             "base": base,
             "lemma": lemma,
+            "frequency": r.get("frequency"),
         }
         if ai:
             result["ai"] = self._ai_check(
@@ -658,7 +694,7 @@ class MQ:
 
     def word_count(
         self, s: str, *, source: str = "both",
-        exclude_inf: bool = False,
+        exclude_inf: bool = False, fq: str | None = None,
     ) -> int:
         """Lightweight count, returns count only.
 
@@ -670,12 +706,21 @@ class MQ:
         if exclude_inf:
             # need Python-side filter, grab DISTINCT word
             where, params = self._where_like(source, s)
+            if fq:
+                fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+                where = f"({where}) AND {fq_cond}"
+                params = list(params) + fq_params
             cur = self.conn.execute(
-                f"SELECT DISTINCT word, umlabeller, citylex FROM words WHERE {where}",
+                f"SELECT DISTINCT word, umlabeller, citylex, frequency FROM words WHERE {where}",
                 params,
             )
             return len(self._filter_inf([dict(r) for r in cur.fetchall()]))
+
         where, params = self._where_like(source, s)
+        if fq:
+            fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+            where = f"({where}) AND {fq_cond}"
+            params = list(params) + fq_params
         cur = self.conn.execute(
             f"SELECT COUNT(DISTINCT word) AS n FROM words WHERE {where}", params,
         )
@@ -683,7 +728,7 @@ class MQ:
 
     def sample(
         self, n: int = 10, *, source: str = "both", seg: str = "both",
-        exclude_inf: bool = False,
+        exclude_inf: bool = False, fq: str | None = None,
     ) -> list[dict]:
         """Random sample.
 
@@ -692,17 +737,23 @@ class MQ:
           source      — which column to search
           seg         — which fields to return
           exclude_inf — whether to exclude inflectional suffixes
+          fq          — frequency filter: "high" | "medium" | "low"
         """
         match seg:
             case "umlabeller":
-                cols = "word, umlabeller"
+                cols = "word, umlabeller, frequency"
             case "citylex":
-                cols = "word, citylex"
+                cols = "word, citylex, frequency"
             case _:
-                cols = "word, umlabeller, citylex"
+                cols = "word, umlabeller, citylex, frequency"
+
+        where, params = self._where_like(source, "%")
+        if fq:
+            fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+            where = f"({where}) AND {fq_cond}"
+            params = list(params) + fq_params
 
         if exclude_inf:
-            where, params = self._where_like(source, "%")
             cur = self.conn.execute(
                 f"SELECT DISTINCT {cols} FROM words WHERE {where} ORDER BY RANDOM() LIMIT {n * 5}",
                 params,
@@ -712,6 +763,10 @@ class MQ:
             return results[:n]
 
         where, params = self._where_like(source, "%")
+        if fq:
+            fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+            where = f"({where}) AND {fq_cond}"
+            params = list(params) + fq_params
         cur = self.conn.execute(
             f"SELECT DISTINCT {cols} FROM words WHERE {where} ORDER BY RANDOM() LIMIT {n}",
             params,
@@ -813,9 +868,17 @@ class MQ:
         for w in words:
             r_row = raw_map.get(w)
             if mode == "seg":
-                r = {"words": w, "morph_seg": self.morph_seg(w, raw_row=r_row)}
+                r = {
+                    "words": w,
+                    "morph_seg": self.morph_seg(w, raw_row=r_row),
+                    "frequency": r_row.get("frequency") if r_row else None
+                }
             elif mode == "count":
-                r = {"words": w, "count": self.morph_count(w, raw_row=r_row)}
+                r = {
+                    "words": w,
+                    "count": self.morph_count(w, raw_row=r_row),
+                    "frequency": r_row.get("frequency") if r_row else None
+                }
             elif mode in ("morph", "morph:ai"):
                 raw = self.word_morph(w, ai=(mode == "morph:ai"), raw_row=r_row)
                 r = {
@@ -827,6 +890,7 @@ class MQ:
                     "lemma": raw.get("lemma"),
                     "S_deri": raw.get("derivational"),
                     "S_inf": raw.get("inflectional"),
+                    "frequency": raw.get("frequency"),
                 }
                 if "ai" in raw:
                     r["ai"] = raw["ai"]

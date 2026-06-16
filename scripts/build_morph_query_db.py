@@ -54,7 +54,7 @@ def parse_citylex(city: str) -> tuple[list[str], list[str], list[str]]:
 
 def extract_morphemes(rows):
     seen = set()  # avoid duplicate inserts for (word, morpheme, type, source)
-    for word, uml, city in rows:
+    for word, uml, city, *_ in rows:
         if not word or word == "Wordsss":  # skip header
             continue
             
@@ -114,7 +114,7 @@ def main():
     conn.execute("DROP TABLE IF EXISTS words")
     conn.execute("DROP TABLE IF EXISTS word_morphemes")
     
-    conn.execute("CREATE TABLE words (word TEXT, umlabeller TEXT, citylex TEXT)")
+    conn.execute("CREATE TABLE words (word TEXT, umlabeller TEXT, citylex TEXT, frequency REAL)")
     conn.execute("CREATE TABLE word_morphemes (word TEXT, morpheme TEXT, type TEXT, source TEXT)")
     
     print(f"Reading TSV: {TSV}")
@@ -125,14 +125,23 @@ def main():
             word = r[0] if len(r) > 0 else ""
             if word == "Wordsss":
                 continue  # skip header
+            
+            freq = None
+            if len(r) > 3 and r[3].strip():
+                try:
+                    freq = float(r[3])
+                except ValueError:
+                    pass
+
             all_rows.append((
                 word,
                 r[1] if len(r) > 1 else "",
-                r[2] if len(r) > 2 else ""
+                r[2] if len(r) > 2 else "",
+                freq
             ))
             
     print(f"Inserting {len(all_rows)} rows into words table...")
-    conn.executemany("INSERT INTO words VALUES (?,?,?)", all_rows)
+    conn.executemany("INSERT INTO words VALUES (?,?,?,?)", all_rows)
     conn.commit()
     
     print("Extracting and inserting morphemes...")

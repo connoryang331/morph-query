@@ -12,12 +12,19 @@ def main():
     exact = "--exact" in sys.argv
     limit = None
     exclude_str = None
+    fq = None
     for a in list(sys.argv):
         if a.startswith("--limit="):
             limit = int(a.split("=", 1)[1])
             sys.argv.remove(a)
         elif a.startswith("--exclude="):
             exclude_str = a.split("=", 1)[1]
+            sys.argv.remove(a)
+        elif a.startswith("--fq="):
+            fq = a.split("=", 1)[1].lower()
+            if fq not in ("high", "medium", "low"):
+                print("Error: --fq must be one of 'high', 'medium', 'low'")
+                sys.exit(1)
             sys.argv.remove(a)
     sys.argv = [a for a in sys.argv if a not in ("--json", "--exclude-inf", "--exact")]
 
@@ -34,7 +41,7 @@ def main():
             sys.exit(1)
 
     if len(sys.argv) < 3:
-        print("Usage: python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N]")
+        print("Usage: python -m morph_query <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--exclude=STR] [--exact] [--limit=N] [--fq=VAL]")
         print()
         print("  Commands:")
         print("    search, prefix, suffix, root, deri_suffix, inf_suffix - search words")
@@ -52,6 +59,7 @@ def main():
         print("  --exclude=STR exclude results containing STR (case-insensitive)")
         print("  --exact       exact morpheme match instead of substring (for search cmd)")
         print("  --limit=N     limit number of results")
+        print("  --fq=VAL      frequency filter: high (>=5.0), medium (1.0-5.0), low (<=1.0)")
         sys.exit(1)
 
     cmd, arg = sys.argv[1], sys.argv[2]
@@ -71,18 +79,18 @@ def main():
         # ── search / count ──
         case "search":
             results = mq.search(arg, source=source, seg=seg,
-                                exclude_inf=exclude_inf, limit=limit, exact=exact)
+                                exclude_inf=exclude_inf, limit=limit, exact=exact, fq=fq)
         case "prefix" | "suffix" | "root" | "deri_suffix" | "inf_suffix":
             fn = CMD_MAP.get(cmd, cmd)
             results = getattr(mq, fn)(arg, source=source, seg=seg,
-                                      exclude_inf=exclude_inf, limit=limit)
+                                      exclude_inf=exclude_inf, limit=limit, fq=fq)
         case "count":
-            n = mq.word_count(arg, source=source, exclude_inf=exclude_inf)
+            n = mq.word_count(arg, source=source, exclude_inf=exclude_inf, fq=fq)
             print(n)
             sys.exit(0)
         case "sample":
             n = int(arg)
-            results = mq.sample(n, source=source, seg=seg, exclude_inf=exclude_inf)
+            results = mq.sample(n, source=source, seg=seg, exclude_inf=exclude_inf, fq=fq)
 
         # ── morphological analysis ──
         case "word_morph":
@@ -128,6 +136,8 @@ def main():
             label += ", exclude_inf"
         if exclude_str:
             label += f", exclude={exclude_str}"
+        if fq:
+            label += f", fq={fq}"
         if limit:
             label += f", limit={limit}"
         print(f"Found {len(results)} results ({label}):")
@@ -137,7 +147,12 @@ def main():
             if seg in ("umlabeller", "both"):
                 parts.append(f"umlabeller={r.get('umlabeller',''):35s}")
             if seg in ("citylex", "both"):
-                parts.append(f"citylex={r.get('citylex','')}")
+                parts.append(f"citylex={r.get('citylex',''):40s}")
+            freq_val = r.get('frequency')
+            if freq_val is not None:
+                parts.append(f"fq={freq_val:.2f}")
+            else:
+                parts.append("fq=N/A")
             print("  ".join(parts))
         if len(results) > display_limit:
             print(f"  ... and {len(results) - display_limit} more")
