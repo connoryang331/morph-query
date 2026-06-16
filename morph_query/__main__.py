@@ -104,15 +104,16 @@ def main():
         if limit:
             label += f", limit={limit}"
         print(f"Found {len(results)} results ({label}):")
-        for r in results[:30]:
+        display_limit = limit if limit is not None else len(results)
+        for r in results[:display_limit]:
             parts = [f"  {r['word']:30s}"]
             if seg in ("umlabeller", "both"):
                 parts.append(f"umlabeller={r.get('umlabeller',''):35s}")
             if seg in ("citylex", "both"):
                 parts.append(f"citylex={r.get('citylex','')}")
             print("  ".join(parts))
-        if len(results) > 30:
-            print(f"  ... and {len(results) - 30} more")
+        if len(results) > display_limit:
+            print(f"  ... and {len(results) - display_limit} more")
 
 
 if __name__ == "__main__":
