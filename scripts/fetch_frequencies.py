@@ -15,7 +15,7 @@ import requests
 TSV_PATH = Path(__file__).parent.parent / "data" / "morph_data.tsv"
 CACHE_PATH = Path(__file__).parent.parent / "data" / "frequency_cache.json"
 
-MAX_WORKERS = 20
+MAX_WORKERS = 40
 BATCH_SAVE_SIZE = 100
 
 def get_word_frequency(word):
