@@ -30,3 +30,7 @@ scripts/frequency_stats.py
 词频分析阈值.txt
 data/*.tmp_tsv
 
+# Agent config files (local only)
+GEMINI.md
+agent.md
+
