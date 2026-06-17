@@ -1,4 +1,4 @@
-"""Unit tests — morph-query core functionality."""
+"""Unit tests — morphoneme core functionality."""
 
 import unittest
 import os

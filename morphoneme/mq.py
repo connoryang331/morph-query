@@ -46,7 +46,7 @@ def ensure_db_exists(db_path: Path) -> None:
         if db_path.exists():
             db_path.unlink()
         raise RuntimeError(
-            f"Failed to download morph-query database from {url}. "
+            f"Failed to download morphoneme database from {url}. "
             f"Error: {e}\n"
             f"Please ensure you have internet access, or download it manually and place it at {db_path}."
         ) from e
