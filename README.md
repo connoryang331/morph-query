@@ -335,7 +335,7 @@ morphoneme/
 ├── data/
 │   ├── citylex-2026-06-15_morphology_segmention.tsv      # CityLex raw data (~68k rows)
 │   ├── eng.word.full.230613.r7_morphologic_division.tsv  # umLabeller raw data (~611k rows)
-│   └── morph_data.tsv           # Merged TSV (build source)
+│   └── morphoneme.tsv           # Merged TSV (build source)
 ├── scripts/
 │   └── build_morphoneme_db.py  # Build database from TSV
 ├── tests/

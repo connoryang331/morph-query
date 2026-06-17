@@ -4,7 +4,7 @@ import sqlite3
 import re
 from pathlib import Path
 
-TSV = Path(__file__).parent.parent / "data" / "morph_data.tsv"
+TSV = Path(__file__).parent.parent / "data" / "morphoneme.tsv"
 DB = Path(__file__).parent.parent / "morphoneme" / "morphoneme.db"
 
 def norm_uml(s: str) -> str:
@@ -114,7 +114,7 @@ def main():
     conn.execute("DROP TABLE IF EXISTS words")
     conn.execute("DROP TABLE IF EXISTS word_morphemes")
     
-    conn.execute("CREATE TABLE words (word TEXT, umlabeller TEXT, citylex TEXT, frequency REAL)")
+    conn.execute("CREATE TABLE words (word TEXT, umlabeller TEXT, citylex TEXT, frequency REAL, pronunciation TEXT)")
     conn.execute("CREATE TABLE word_morphemes (word TEXT, morpheme TEXT, type TEXT, source TEXT)")
     
     print(f"Reading TSV: {TSV}")
@@ -133,15 +133,17 @@ def main():
                 except ValueError:
                     pass
 
+            pron = r[4] if len(r) > 4 else ""
             all_rows.append((
                 word,
                 r[1] if len(r) > 1 else "",
                 r[2] if len(r) > 2 else "",
-                freq
+                freq,
+                pron
             ))
             
     print(f"Inserting {len(all_rows)} rows into words table...")
-    conn.executemany("INSERT INTO words VALUES (?,?,?,?)", all_rows)
+    conn.executemany("INSERT INTO words VALUES (?,?,?,?,?)", all_rows)
     conn.commit()
     
     print("Extracting and inserting morphemes...")
@@ -165,6 +167,7 @@ def main():
         
     print("Creating indexes...")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_word ON words(word)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pron ON words(pronunciation)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_morpheme ON word_morphemes(morpheme, type, source)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_morpheme_word ON word_morphemes(word)")
     conn.commit()

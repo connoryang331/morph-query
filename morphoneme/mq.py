@@ -121,11 +121,11 @@ class MQ:
         if exact:
             match seg:
                 case "umlabeller":
-                    cols = "w.word, w.umlabeller, w.frequency"
+                    cols = "w.word, w.umlabeller, w.frequency, w.pronunciation"
                 case "citylex":
-                    cols = "w.word, w.citylex, w.frequency"
+                    cols = "w.word, w.citylex, w.frequency, w.pronunciation"
                 case _:
-                    cols = "w.word, w.umlabeller, w.citylex, w.frequency"
+                    cols = "w.word, w.umlabeller, w.citylex, w.frequency, w.pronunciation"
 
             where_clauses = ["m.morpheme = ?"]
             params = [s]
@@ -149,11 +149,11 @@ class MQ:
         else:
             match seg:
                 case "umlabeller":
-                    cols = "word, umlabeller, frequency"
+                    cols = "word, umlabeller, frequency, pronunciation"
                 case "citylex":
-                    cols = "word, citylex, frequency"
+                    cols = "word, citylex, frequency, pronunciation"
                 case _:
-                    cols = "word, umlabeller, citylex, frequency"
+                    cols = "word, umlabeller, citylex, frequency, pronunciation"
             where, params = self._where_like(source, s)
 
             if fq:
@@ -263,11 +263,11 @@ class MQ:
         """Query specialized relation table word_morphemes for exact morpheme search."""
         match seg:
             case "umlabeller":
-                cols = "w.word, w.umlabeller, w.frequency"
+                cols = "w.word, w.umlabeller, w.frequency, w.pronunciation"
             case "citylex":
-                cols = "w.word, w.citylex, w.frequency"
+                cols = "w.word, w.citylex, w.frequency, w.pronunciation"
             case _:
-                cols = "w.word, w.umlabeller, w.citylex, w.frequency"
+                cols = "w.word, w.umlabeller, w.citylex, w.frequency, w.pronunciation"
 
         where_clauses = ["m.morpheme = ?", "m.type = ?"]
         params = [morpheme, morph_type]
@@ -755,11 +755,11 @@ class MQ:
         """
         match seg:
             case "umlabeller":
-                cols = "word, umlabeller, frequency"
+                cols = "word, umlabeller, frequency, pronunciation"
             case "citylex":
-                cols = "word, citylex, frequency"
+                cols = "word, citylex, frequency, pronunciation"
             case _:
-                cols = "word, umlabeller, citylex, frequency"
+                cols = "word, umlabeller, citylex, frequency, pronunciation"
 
         where, params = self._where_like(source, "%")
         if fq:
@@ -940,6 +940,117 @@ class MQ:
             raise ValueError(f"unsupported format: {fmt}")
 
         return str(output_path.resolve())
+
+    # ── phonetics features ─────────────────────────────────
+
+    def predict_pronunciation(self, word: str) -> str:
+        """Predict the pronunciation of a word using G2P."""
+        try:
+            from g2p_en import G2p
+            g2p = G2p()
+            phonemes = g2p(word)
+            return " ".join([p for p in phonemes if p.strip()]).upper()
+        except Exception:
+            return ""
+
+    def get_pronunciation(self, word: str) -> str | None:
+        """Retrieve pronunciation from database, or predict using G2P."""
+        inp = word.strip().lower()
+        cur = self.conn.execute("SELECT pronunciation FROM words WHERE word = ?", (inp,))
+        row = cur.fetchone()
+        if row and row["pronunciation"]:
+            return row["pronunciation"]
+        # Fallback to G2P prediction
+        return self.predict_pronunciation(word)
+
+    def get_rhyme_suffix(self, pron: str) -> str:
+        """Extract rhyme suffix from a pronunciation string."""
+        if not pron:
+            return ""
+        parts = pron.split()
+        idx = -1
+        vowels = {"AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER", "EY", "IH", "IY", "OW", "OY", "UH", "UW"}
+        
+        # 1. Try to find the last stressed vowel (contains '1' or '2')
+        for i in range(len(parts) - 1, -1, -1):
+            ph = parts[i]
+            base = ph.rstrip("012")
+            if base in vowels and ('1' in ph or '2' in ph):
+                idx = i
+                break
+        if idx == -1:
+            # Fallback to any vowel (stress '0' or no digit at all)
+            for i in range(len(parts) - 1, -1, -1):
+                ph = parts[i]
+                base = ph.rstrip("012")
+                if base in vowels:
+                    idx = i
+                    break
+        if idx != -1:
+            return " ".join(parts[idx:])
+        return pron
+
+    def get_rhymes(
+        self, word_or_ending: str, *, limit: int | None = None, fq: str | None = None,
+    ) -> list[dict]:
+        """Find words that rhyme with a given word or phonetic ending."""
+        inp = word_or_ending.strip()
+        is_phonetic_suffix = " " in inp or (inp.isupper() and any(c.isdigit() for c in inp))
+
+        rhyme_suffix = ""
+        if not is_phonetic_suffix:
+            # Try to look up as a word in the DB
+            cur = self.conn.execute("SELECT pronunciation FROM words WHERE word = ?", (inp.lower(),))
+            row = cur.fetchone()
+            if row and row["pronunciation"]:
+                rhyme_suffix = self.get_rhyme_suffix(row["pronunciation"])
+            else:
+                # Fallback to predicting G2P pronunciation and extracting rhyme suffix
+                pron = self.predict_pronunciation(inp)
+                if pron:
+                    rhyme_suffix = self.get_rhyme_suffix(pron)
+
+        if not rhyme_suffix:
+            # Treat the input directly as a phonetic rhyme suffix
+            rhyme_suffix = inp.upper()
+
+        where_clauses = ["(pronunciation LIKE '% ' || ? OR pronunciation = ?)"]
+        params = [rhyme_suffix, rhyme_suffix]
+
+        if fq:
+            fq_cond, fq_params = self._get_fq_condition(fq, prefix="")
+            where_clauses.append(fq_cond)
+            params.extend(fq_params)
+
+        where_str = " AND ".join(where_clauses)
+        sql = f"SELECT word, umlabeller, citylex, frequency, pronunciation FROM words WHERE {where_str}"
+        if limit:
+            sql += f" LIMIT {limit}"
+
+        cur = self.conn.execute(sql, params)
+        results = [dict(r) for r in cur.fetchall()]
+
+        # Filter out the query word if we looked up by word
+        if not is_phonetic_suffix:
+            results = [r for r in results if r["word"].lower() != inp.lower()]
+
+        # Sort by frequency descending (with null frequencies at the bottom)
+        results.sort(key=lambda x: x.get("frequency") or -1.0, reverse=True)
+        return results
+
+    def get_syllable_count(self, word: str) -> int:
+        """Count the number of syllables in a word."""
+        inp = word.strip().lower()
+        cur = self.conn.execute("SELECT pronunciation FROM words WHERE word = ?", (inp,))
+        row = cur.fetchone()
+        if row and row["pronunciation"]:
+            parts = row["pronunciation"].split()
+            count = sum(1 for p in parts if any(c.isdigit() for c in p))
+            if count > 0:
+                return count
+        # Fallback to syllables library
+        import syllables
+        return syllables.estimate(inp)
 
     @staticmethod
     def _flatten_keys(d: dict) -> list[str]:

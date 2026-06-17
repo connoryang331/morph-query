@@ -331,7 +331,7 @@ morphoneme/
 ├── data/
 │   ├── citylex-2026-06-15_morphology_segmention.tsv      # CityLex 原始数据 (~6.8万行)
 │   ├── eng.word.full.230613.r7_morphologic_division.tsv  # umLabeller 原始数据 (~61.1万行)
-│   └── morph_data.tsv           # 合并后的中间 TSV (构建数据库的源文件)
+│   └── morphoneme.tsv           # 合并后的中间 TSV (构建数据库的源文件)
 ├── scripts/
 │   └── build_morphoneme_db.py  # 从 TSV 构建 SQLite 数据库的脚本
 ├── tests/

@@ -54,6 +54,9 @@ def main():
         print("    morph_count / word_count / count <word>                  - morpheme count")
         print("    lemma                                                    - strip inflection")
         print("    word_morph                                               - full morphological structure")
+        print("    pron / pronunciation                                     - lookup pronunciation (ARPAbet)")
+        print("    rhyme                                                    - search rhyming words")
+        print("    syllables                                                - count syllables")
         print()
         print("  source: both (default), umlabeller, citylex")
         print("  seg:    both (default), umlabeller, citylex")
@@ -112,6 +115,19 @@ def main():
             r = mq.lemma(arg)
             print(_json.dumps(r, ensure_ascii=False) if r else "Not found")
             sys.exit(0)
+
+        # ── phonetics analysis ──
+        case "pron" | "pronunciation":
+            r = mq.get_pronunciation(arg)
+            print(r if r else "Not found")
+            sys.exit(0)
+        case "rhyme":
+            results = mq.get_rhymes(arg, limit=limit, fq=fq)
+        case "syllables":
+            n = mq.get_syllable_count(arg)
+            print(n)
+            sys.exit(0)
+
         case _:
             print(f"Unknown: {cmd}")
             sys.exit(1)
@@ -156,6 +172,9 @@ def main():
                 parts.append(f"fq={freq_val:.2f}")
             else:
                 parts.append("fq=N/A")
+            pron_val = r.get('pronunciation')
+            if pron_val:
+                parts.append(f"pron={pron_val}")
             print("  ".join(parts))
         if len(results) > display_limit:
             print(f"  ... and {len(results) - display_limit} more")

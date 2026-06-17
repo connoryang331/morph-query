@@ -300,6 +300,41 @@ class TestMQ(unittest.TestCase):
                 self.assertGreaterEqual(freq, 1.0)
                 self.assertLess(freq, 5.0)
 
+    # ── phonetics tests ───────────────────────────────────
+
+    def test_get_pronunciation(self):
+        pron = self.mq.get_pronunciation("ability")
+        self.assertIsInstance(pron, str)
+        self.assertGreater(len(pron), 0)
+        # Should be space separated ARPAbet
+        self.assertIn(" ", pron)
+
+    def test_get_rhyme_suffix(self):
+        suffix = self.mq.get_rhyme_suffix("AH0 B IH1 L IH0 T IY0")
+        self.assertEqual(suffix, "IH1 L IH0 T IY0")
+        
+        # Test word with no stress digits (fallback to vowel with 0)
+        suffix_no_stress = self.mq.get_rhyme_suffix("K AE T")
+        self.assertEqual(suffix_no_stress, "AE T")
+
+    def test_get_syllable_count(self):
+        # "ability" has 4 syllables (a-bil-i-ty)
+        count = self.mq.get_syllable_count("ability")
+        self.assertEqual(count, 4)
+
+        # "test" has 1 syllable
+        count_test = self.mq.get_syllable_count("test")
+        self.assertEqual(count_test, 1)
+
+    def test_get_rhymes(self):
+        # Test rhyme with a phonetic ending
+        results = self.mq.get_rhymes("IH1 L IH0 T IY0", limit=5)
+        self.assertIsInstance(results, list)
+        for r in results:
+            self.assertIn("word", r)
+            self.assertIn("pronunciation", r)
+            self.assertTrue(r["pronunciation"].endswith("IH1 L IH0 T IY0"))
+
 
 if __name__ == "__main__":
     unittest.main()

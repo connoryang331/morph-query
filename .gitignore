@@ -22,3 +22,11 @@ env/
 *.db.zip
 data/frequency_cache.json*
 data/pronunciation_cache.json*
+
+# Exclude local build/fetch scripts, logs, and temporary files
+scripts/fetch_frequencies.py
+scripts/fetch_pronunciations.py
+scripts/frequency_stats.py
+词频分析阈值.txt
+data/*.tmp_tsv
+
