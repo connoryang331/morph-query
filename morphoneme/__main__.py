@@ -22,13 +22,22 @@ def main():
             sys.argv.remove(a)
         elif a.startswith("--fq="):
             fq_raw = a.split("=", 1)[1].lower()
-            fq_list = [f.strip() for f in fq_raw.split(",") if f.strip()]
+            fq_tokens = [f.strip() for f in fq_raw.split(",") if f.strip()]
+            fq_list = []
+            for token in fq_tokens:
+                if token == "common":
+                    fq_list.extend(["high", "medium"])
+                elif token == "uncommon":
+                    fq_list.extend(["low", "rare", "zero"])
+                else:
+                    fq_list.append(token)
             valid_levels = {"high", "medium", "low", "rare", "zero"}
             if not fq_list or any(f not in valid_levels for f in fq_list):
-                print("Error: --fq must contain comma-separated values from 'high', 'medium', 'low', 'rare', 'zero'")
+                print("Error: --fq must contain comma-separated values from 'high', 'medium', 'low', 'rare', 'zero', 'common', 'uncommon'")
                 sys.exit(1)
             fq = ",".join(fq_list)
             sys.argv.remove(a)
+
     sys.argv = [a for a in sys.argv if a not in ("--json", "--exclude-inf", "--exact")]
 
     mq = MQ()
@@ -65,7 +74,7 @@ def main():
         print("  --exclude=STR exclude results containing STR (case-insensitive)")
         print("  --exact       exact morpheme match instead of substring (for search cmd)")
         print("  --limit=N     limit number of results")
-        print("  --fq=VAL      frequency filter: comma-separated from 'high' (>=5.0), 'medium' (>=1.0), 'low' (>=0.1), 'rare' (>0.0), 'zero' (==0.0/NULL)")
+        print("  --fq=VAL      frequency filter: comma-separated from 'high', 'medium', 'low', 'rare', 'zero', 'common', 'uncommon'")
         sys.exit(1)
 
     cmd, arg = sys.argv[1], sys.argv[2]

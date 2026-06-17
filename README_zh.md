@@ -116,7 +116,7 @@ python -m morphoneme <cmd> <arg> [source] [seg] [--json] [--exclude-inf] [--excl
 | `--exclude=S1,S2` | 排除包含任一逗号分隔子串的结果（不区分大小写，支持多个子串） |
 | `--exact` | 精确匹配词素而不是模糊子串匹配（仅适用于 `search` 命令） |
 | `--limit=N` | 限制返回的结果数量 |
-| `--fq=VAL` | 按词频分类过滤（支持多选，逗号分隔）：`high` (>=5.0), `medium` (>=1.0), `low` (>=0.1), `rare` (>0.0), `zero` (==0.0 或 NULL)。支持多选（例如 `--fq=high,medium`）。 |
+| `--fq=VAL` | 按词频分类过滤（支持多选，逗号分隔）：`high` (>=5.0), `medium` (>=1.0), `low` (>=0.1), `rare` (>0.0), `zero` (==0.0 或 NULL)，或使用快捷选项：`common` (代表 `high,medium` 常用词), `uncommon` (代表 `low,rare,zero` 非常用词)。支持多选（例如 `--fq=common,rare`）。 |
 
 ### 词频分类统计 (Word Frequency Tiers)
 
