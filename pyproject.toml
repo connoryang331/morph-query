@@ -4,11 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morphoneme"
-version = "0.1.1"
+version = "0.1.2"
 description = "Search English words by morphological and phonological columns"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+dependencies = [
+    "g2p-en>=2.1.0",
+    "syllables>=1.1.5",
+]
 keywords = ["morphology", "morpheme", "phoneme", "phonology", "linguistics", "english", "word-analysis"]
 classifiers = [
     "Development Status :: 4 - Beta",
